@@ -1,53 +1,8 @@
 # ViewJS
 
-A tiny (3KB) client-side library for building reactive UIs with minimal, concise, declarative code. Built on VanJS. No dependencies. No build tools. Just start coding.
+A tiny (<3.3KB) client-side library for building reactive UIs with minimal, concise, declarative code. Built on VanJS. No dependencies. No build tools. Just start coding.
 
-## Overview
-
-### Core Concept
-
-Every building block is a 'View' with a unique name (capitalized), so we can reference them from anywhere.
-
-**Create Views from HTML elements:**
-```html
-<div View="App"></div>
-<template View="Counter">
-  <button View="Increment">+</button>
-  <span View="Display">0</span>
-</template>
-```
-
-**Create views from data:**
-```javascript
-// Data view
-const Count = View(0)
-Count()      // When we read this View: Returns 0
-Count(5)     // When we update this View: Sets to 5, returns 5
-
-// Computed view
-const Doubled = View(() => Count() * 2)
-Doubled()    // Returns the computed value. Updates itself when Count changes.
-```
-
-**Get the elements and build a UI:**
-```javascript
-const { App, Counter } = View
-
-// App is an element view (updates in place)
-App()                    // Returns the App element
-App(Counter({            // Binds a new Counter to the App element
-  Display: () => Count(),
-  Increment: { onclick: () => Count(Count() + 1) }
-}))
-
-// Counter is a template view (always creates clones)
-Counter()                // Returns template element
-Counter({...})           // Creates new clone with bindings
-```
-
-When you use a view inside another view, ViewJS tracks the dependency. Update the inner view → outer view updates automatically.
-
-### Working Example
+## Quick Start
 
 ```html
 <!DOCTYPE html>
@@ -66,298 +21,167 @@ When you use a view inside another view, ViewJS tracks the dependency. Update th
     const Count = View(0)
     const { App, Counter } = View
     
-    App( 
-      Counter({
-        Display: () => Count(),
-        Increase: { onclick: () => Count(Count() + 1) }
-      })
-    )
+    App(Counter({
+      Display: () => Count(),
+      Increase: { onclick: () => Count(Count() + 1) }
+    }))
   </script>
 </body>
 </html>
 ```
 
-### Disclaimer
+**What's happening:**
+1. Add `View="Name"` attributes to HTML elements
+2. Create reactive data: `const Count = View(0)`
+3. Get elements: `const { App, Counter } = View`
+4. Bind them: `Counter({ Display: () => Count() })`
 
-This is a proof of concept - a personal experiment shared to gauge interest in simpler alternatives to today's frameworks.
+When `Count` changes → `Display` updates automatically.
 
-### Getting Started
+## Installation
 
-1. **Requirements**: Modern browser with ES6 module support, no build tools required
-2. **Import**: `import View from 'https://cdn.jsdelivr.net/gh/tamasmajer/view-js/view.min.js'`
-3. **Name your elements**: Add `View="Name"` attributes to HTML elements
-4. **Create views**: `const Count = View(0)` creates a callable view
-5. **Access element views**: `const { App } = View` to get element views from DOM
-6. **Call views**: `Count()` reads, `Count(5)` writes, `App(...)` updates
+```javascript
+import View from 'https://cdn.jsdelivr.net/gh/tamasmajer/view-js/view.min.js'
+```
+
+**Requirements:** Modern browser with ES6 modules. No build tools needed.
+
+## Core Concepts
+
+### Views Are Callable
+
+Everything in ViewJS is a "view" - a callable that reads or writes:
+
+```javascript
+// Data views
+const Count = View(0)
+Count()      // Read: returns 0
+Count(5)     // Write: sets to 5
+
+// Element views
+const { App } = View
+App()        // Read: returns DOM element
+App(content) // Write: updates element
+
+// Template views
+const { Card } = View
+Card()             // Creates empty clone
+Card({ Title: 'Hello' })  // Creates bound clone
+```
+
+### Reactive Updates
+
+Use functions to make things reactive:
+
+```javascript
+const Name = View('John')
+const Greeting = View(() => `Hello, ${Name()}!`)
+
+Name('Jane')  // Greeting automatically updates to "Hello, Jane!"
+```
+
+In templates:
+```javascript
+const { App } = View
+App(() => `Count: ${Count()}`)  // Updates when Count changes
+```
+
+### What Can Be Views?
+
+**1. State & Computed Views** (reactive data)
+```javascript
+const Count = View(0)                    // State
+const Double = View(() => Count() * 2)   // Computed
+```
+
+**2. DOM Views** (HTML elements via `View` attributes)
+```javascript
+<div View="App"></div>              // Element (updates in-place)
+<template View="Card"></template>   // Template (creates clones)
+
+const { App, Card } = View
+```
+
+**3. External Resources** (browser APIs)
+```javascript
+const Storage = View(localStorage)           // Storage
+const ApiFetch = View(fetch, { url: '...' }) // HTTP
+const Templates = View(DOMParser, html)      // HTML parsing
+```
 
 ## Creating Views
 
-Views follow the pattern **View(summary, details)**:
-- `View()` returns the summary
-- `View(details)` updates the summary or creates something new
-
-The type of view depends on the first argument:
-
-| First Argument | View Type | Example |
-|----------------|----------|---------|
-| **Value** | Data view | `View(0)`, `View({ name: 'John' })` |
-| **Function** | Computed view | `View(() => Count() * 2)` |
-| **Array + Function** | Conditional computed | `View([Count], () => expensive())` |
-| **localStorage** | Storage view | `View(localStorage)` or `View(localStorage, 'prefix/')` |
-| **DOMParser + String** | Parse HTML document | `View(DOMParser, '<html>...</html>')` |
-| **DOMParser + View** | Parse from view | `View(DOMParser, htmlView)` |
-| **fetch** | Fetch configurator | `View(fetch)` or `View(fetch, config)` |
-| **Fetch Configurator + Config** | Remote view | `ApiFetch({ url: '/api/users' })` |
-| **Fetch Configurator + Array + Function** | Conditional remote | `ApiFetch([DocId], payload => {...})` |
-| **DOM Node** | Element view | `View(window)`, `View(document.body)` |
-| **Property Access** | Access views by name | `View.Button`, `View.div` |
+| What You Have | How to Create View | Example |
+|---------------|-------------------|---------|
+| **A value** | `View(value)` | `View(0)`, `View({ name: 'John' })` |
+| **A computation** | `View(() => ...)` | `View(() => Count() * 2)` |
+| **Conditional computation** | `View([triggers], () => ...)` | `View([Count], () => expensive())` |
+| **localStorage** | `View(localStorage)` or with prefix | `View(localStorage, 'app/')` |
+| **HTML string** | `View(DOMParser, html)` | `View(DOMParser, '<html>...')` |
+| **Remote API** | 2 steps (see below) | `ApiFetch({ path: '/users' })` |
+| **DOM node** | `View(node)` | `View(document.body)` |
+| **HTML element** | Add `View="Name"` | `<div View="App">` |
+| **Template** | Add `View="Name"` | `<template View="Card">` |
 
 ### Destructure What You Need
 
-ViewJS provides convenient property access for common patterns:
+Access browser APIs and create elements by destructuring from View:
 
 ```javascript
-// Access special constructors via capitalized properties
+// Browser APIs (capitalized)
 const { Window, Document, LocalStorage, Fetch, DomParser } = View
 
-// Window and Document
-Window()              // Returns window object
-Document()            // Returns document object
-Window({ onresize })  // Bind event handlers
-Document({ onclick }) // Bind event handlers
+// HTML elements (lowercase)
+const { div, span, button } = View
 
-// LocalStorage
-const Storage = LocalStorage()     // Get storage proxy
-const { Settings } = Storage       // Access storage keys as sub-views
-Settings({ theme: 'dark' })        // Auto-saves to localStorage
-
-// With prefix
-const Storage = View(localStorage, 'app/')  // Prefix all keys with 'app/'
-const { Config } = Storage                  // Saves to 'app/Config'
-
-// Fetch (2-step process)
-const { Fetch } = View                       // Step 1: Get fetch configurator
-const Users = Fetch({ url: '/api/users' })  // Step 2: Create remote view
-
-// Or create a custom fetch configurator with base config
-const ApiFetch = View(fetch, { url: 'https://api.example.com' })
-const Users = ApiFetch({ path: '/users' })  // Extends base config
-
-// DomParser
-const Templates = DomParser('<html>...')  // Parse HTML string
-const { Card } = Templates                // Extract templates
+// Your templates and elements (capitalized, from View attributes)
+const { App, Counter, UserCard } = View
 ```
 
-### View Types
+**Browser API shortcuts:**
 
-**Stateful views** (can read and write):
-- Data views: `Count()` reads, `Count(5)` writes
-- Remote views: `Users()` reads cache, `Users(data)` posts
-- Storage views: `Storage()` reads object, `Storage.Settings()` reads key
-- Element views: `App()` reads element, `App({...})` updates
-
-**Factory views** (only create new instances):
-- Template views: `Counter()` creates empty clone, `Counter({...})` creates with bindings
-- Tag views: `div()` creates empty div, `div({...})` creates with props
-
-### Sub-views
-
-Views can contain sub-views accessed via properties:
 ```javascript
-const { Template } = View       // Template is a view
-Template.Title                  // Title sub-view inside Template
-Template.Title()                // Get Title element
-Template.Title('Hello')         // Set Title content
+// Global objects
+Window({ onresize: updateLayout })    // Bind to window
+Document({ onclick: handleClick })    // Bind to document
 
-const Storage = LocalStorage()
-Storage.Settings                // Settings sub-view (localStorage key)
-Storage.Settings()              // Get value
-Storage.Settings({ theme: 'dark' })  // Set value
-```
+// Storage
+const { Settings } = LocalStorage          // Auto-synced keys
+Settings({ theme: 'dark' })
 
-### Examples
+// Or with prefix
+const Storage = View(localStorage, 'app/')
+const { Config } = Storage  // Saves to 'app/Config'
 
-**View your data:**
-```javascript
-const Counter = View(0)
-const User = View({ name: 'John' })
-const Doubled = View(() => Counter() * 2)           // Computed (auto-tracked)
-const Controlled = View([Counter], () => heavyCalc())  // Only updates when Counter changes
-const Precise = View([Counter, User], () => compute()) // Only updates when Counter or User changes
-```
+// HTML parsing
+const Templates = DomParser('<html>...')
+const { Card } = Templates
 
-**Combine the contents of views:**
-```javascript
-const FirstName = View('John')
-const LastName = View('Doe')
-const FullName = View(() => `${FirstName()} ${LastName()}`)
-
-FirstName('Jane')  // FullName automatically updates to "Jane Doe"
-```
-
-**Create views from localStorage:**
-```javascript
-// Direct API
-const { Settings } = View(localStorage)           // Auto-sync to localStorage
-const { Prefs } = View(localStorage, 'myapp/')    // With namespace prefix
-
-// Simplified API
-const { LocalStorage } = View
-const Storage = LocalStorage('myapp/')
-const { Settings, Prefs } = Storage
-```
-
-**Create remote views:**
-```javascript
-// Using the Fetch configurator (2-step process)
+// HTTP (see Remote Views section)
 const { Fetch } = View
-
-// Static URL
-const Users = Fetch({ url: '/api/users' })
-
-// With base configuration - create a custom fetch configurator
-const ApiFetch = View(fetch, { url: 'https://api.example.com' })
-const Users = ApiFetch({ path: '/users' })
-
-// Reactive URL (refetches when PostId changes)
-const PostId = View(1)
-const Post = Fetch(() => ({ url: `/api/posts/${PostId()}` }))
-
-// With explicit conditions
-const DocId = View(1)
-const Doc = Fetch([DocId], payload => ({
-  url: `/api/documents/${DocId()}`,
-  body: payload
-}))
-
-// Usage
-Users()              // GET /api/users (returns cached value)
-Users(newUser)       // POST /api/users (with payload)
-PostId(2)            // Triggers refetch of Post
-Doc()                // GET - refetches when DocId changes
-Doc(updates)         // POST with updates
 ```
 
-**Parse external HTML:**
-```javascript
-// Direct API
-const Templates = View(DOMParser, '<html><template View="Card">...</template></html>')
-const { Card } = Templates
+## Data Views
 
-// Simplified API
-const { DomParser } = View
-const Templates = DomParser('<html><template View="Card">...</template></html>')
-const { Card } = Templates
+### Basic State
 
-// From fetch view
-const { Fetch, DomParser } = View
-const Html = Fetch({ url: '/templates.html' })
-const Templates = DomParser(Html)
-const { UserCard, TodoItem } = Templates
-
-// Reactive parsing
-const Templates = DomParser(() => dynamicHTML())
-```
-
-**Create views from DOM nodes:**
-```javascript
-// Using the simplified API
-const { Window, Document } = View
-Window({ onresize: () => updateLayout() })  // Bind event handler
-Document({ onclick: handleGlobalClick })
-
-// Direct API
-const Body = View(document.body, { class: 'dark-theme' })
-Body()  // Returns document.body
-Body({ class: 'light-theme' })  // Update class
-
-// Any DOM element
-const myElement = document.getElementById('special')
-const Special = View(myElement)
-Special({ onclick: handler }, 'New content')  // Bind + add children
-```
-
-**Find views by name:**
-```javascript
-const { Counter } = View
-Counter({ count: () => Count() })       // Use template
-
-const { MyButton } = View
-MyButton().focus()                      // Direct DOM access
-
-const { div, span } = View              // Create elements
-```
-
-### Return Values and Access
-
-**Data containers** → Call to get/set
 ```javascript
 const Count = View(0)
-Count(5)              // Set value
-console.log(Count())  // Get value → 5
-```
-
-**Template/Element containers** → Call to get node, call with args to create/update
-```javascript
-// Get the actual DOM node
-const { App } = View
-const appNode = App()
-appNode.classList.add('ready')
-
-// Create a new instance from template
-const { Counter } = View
-const counter = Counter({ Display: () => Count() })
-document.body.append(counter)
-
-// Update element in place
-App(Counter({ Display: () => Count() }))
-App([])  // Clear children
-```
-
-**localStorage views** → Destructure containers
-```javascript
-const { LocalStorage } = View
-const Storage = LocalStorage('app/')
-const { Settings } = Storage
-Settings({ darkMode: true })  // Auto-saves
-console.log(Settings())       // Get value
-```
-
-**Remote views** → Call to make requests
-```javascript
-const { Fetch } = View
-const ApiFetch = Fetch({ url: '/api' })
-// Remote views are created in step 2
-```
-
-## Features
-
-- [Data Views](#data-views)
-- [Elements with View Attributes](#elements-with-view-attributes)
-- [Elements without View Attributes](#elements-without-view-attributes)
-- [Creating Elements with Tags](#creating-elements-with-tags)
-- [List Handling](#list-handling)
-- [External Templates](#external-templates)
-- [Remote Views](#remote-views)
-- [Local View from/to Remote View](#local-view-fromto-remote-view)
-- [Best Practices](#best-practices)
-- [VanJS Enhancements](#vanjs-enhancements)
-
-### Data Views
-
-View your data to make it reactive.
-
-**Basic usage:**
-```javascript
-const Counter = View(0)
 const User = View({ name: 'John', age: 25 })
 
-// Access/modify by calling
-Counter(10)
-User({ ...User(), age: 26 })  // Always replace, never mutate
+// Read
+console.log(Count())     // 0
+console.log(User().name) // 'John'
+
+// Write (always replace, never mutate)
+Count(10)
+User({ ...User(), age: 26 })
 ```
 
-**Computed values:**
+### Computed Views
+
+Auto-update when their dependencies change:
+
 ```javascript
 const Price = View(100)
 const Quantity = View(2)
@@ -366,376 +190,286 @@ const Total = View(() => Price() * Quantity())
 Price(150)  // Total automatically becomes 300
 ```
 
-**Performance optimization:**
+### Conditional Updates
+
+Control when computations run by specifying conditions:
+
 ```javascript
-const Result = View([Dep1, Dep2], () => compute())  // Only updates when specified conditions change
+// Only recomputes when Count changes, ignoring other dependencies
+const Controlled = View([Count], () => {
+  const value = Count()
+  const other = SomeOtherView()  // Changes here won't trigger recompute
+  return expensiveCalc(value)
+})
 ```
 
-**Persistent views:**
+**Why?** Prevents unnecessary updates and enables precise control over re-renders.
+
+### Persistent State
+
+Auto-sync with localStorage:
+
 ```javascript
-// Direct API
 const { Settings } = View(localStorage)
-const { UserPrefs } = View(localStorage, 'myapp/')
+Settings({ theme: 'dark', lang: 'en' })  // Auto-saves
 
-// Simplified API
-const { LocalStorage } = View
-const Storage = LocalStorage('myapp/')
-const { Settings, UserPrefs } = Storage
-
-Settings({ darkMode: true })  // Auto-saves
+// With prefix for organization
+const { Config } = View(localStorage, 'myapp/')  // Saves to 'myapp/Config'
 ```
 
-### Elements with View Attributes
+## Templates and Elements
 
-**Template behavior:**
-- `<template View="Name">` → `View.Name()` returns the template element itself
-- `<template View="Name">` → `View.Name({})` clones and binds the template
-- `<div View="Name">` → `View.Name()` returns the div element
-- `<div View="Name">` → `View.Name({})` updates element in-place
+### HTML First
 
-**Naming convention:**
-Use uppercase names: `View="Counter"` not `View="counter"`
+Define structure in HTML, bind behavior in JavaScript:
 
-**Element access:**
+```html
+<div View="App"></div>
+
+<template View="Counter">
+  <button View="DecBtn">-</button>
+  <span View="Display">0</span>
+  <button View="IncBtn">+</button>
+</template>
+```
+
+```javascript
+const Count = View(0)
+const { App, Counter } = View
+
+App(Counter({
+  Display: () => Count(),
+  IncBtn: { onclick: () => Count(Count() + 1) },
+  DecBtn: { onclick: () => Count(Count() - 1) }
+}))
+```
+
+### Binding Patterns
+
+```javascript
+const { Card } = View
+
+// Content only
+Card({ Title: 'Hello World' })
+
+// Properties only
+Card({ Button: { onclick: handler } })
+
+// Both
+Card({ Button: [{ onclick: handler, class: 'primary' }, 'Click Me'] })
+
+// Mixed: lowercase = element props, Uppercase = descendants
+Card({
+  class: 'featured',           // Card element class
+  Title: 'Featured Post',      // Descendant element content
+  LikeBtn: { onclick: like }   // Descendant element props
+})
+```
+
+### Accessing DOM Elements
+
+Template/element views can be called to get the actual DOM node:
+
 ```javascript
 const { MyButton } = View
-const button = MyButton()  // Get the DOM element
+const button = MyButton()  // Returns HTMLButtonElement
 button.focus()
+button.classList.add('highlighted')
 ```
 
-**Template binding patterns:**
-```javascript
-const { Counter, UserCard } = View
-Counter({
-  Display: 'text only',                           // Content only
-  Button: { onclick: handler },                   // Properties only
-  Link: [{ href: '/page', class: 'active' }, 'Visit']  // Properties + content
-})
+### Creating Elements Programmatically
 
-// Mixed format: combine element properties with descendant updates
-UserCard({
-  class: 'active',              // lowercase = element property  
-  UserName: User().name,        // Uppercase = descendant view content
-  EditBtn: { onclick: edit }    // Uppercase = descendant view properties
-})
-```
-
-**Element operations:**
-```javascript
-// Get the DOM node
-const { Element } = View
-const node = Element()
-
-// Properties only (keeps existing children)
-Element({ onclick: handler, class: 'active' })
-
-// Properties + replace all children
-Element([{ onclick: handler }, 'new content'])
-
-// Clear all children
-Element([])
-
-// Update descendants by view names (Uppercase)
-Element({ 
-  Child1: 'new text', 
-  Child2: { class: 'highlight' } 
-})
-
-// Mixed format: element properties + descendant view updates (case sensitive)
-Element({ 
-  class: 'container',           // lowercase = element attribute
-  Title: 'New title',           // Uppercase = descendant view update
-  Button: { onclick: handler }  // Uppercase = descendant view update
-})
-```
-
-### Elements without View Attributes
-
-Bind properties and events to existing DOM nodes.
-
-**Direct node binding:**
-```javascript
-// Using simplified API
-const { Window, Document } = View
-Window({ 
-  onresize: () => updateLayout(),
-  onbeforeunload: (e) => e.preventDefault()
-})
-Document({ onclick: handleGlobalClick })
-
-// Direct API
-View(window, { onresize: () => updateLayout() })
-View(document, { onclick: handleGlobalClick })
-View(document.body, { onkeydown: (e) => {
-  if (e.key === 'Escape') closeModal()
-}})
-
-// Bind to any DOM element
-const myDiv = document.getElementById('myDiv')
-View(myDiv, {
-  onclick: handleClick,
-  class: () => IsActive() ? 'active' : ''
-})
-```
-
-### Creating Elements with Tags
-
-Build UI elements programmatically.
-
-**Element destructuring:**
 ```javascript
 const { div, span, button, h1 } = View
 
 const widget = div({ class: 'widget' },
   h1('Title'),
-  span(() => Counter()),
-  button({ onclick: () => Counter(Counter() + 1) }, 'Increment')
+  span(() => Count()),  // Reactive
+  button({ onclick: increment }, 'Increment')
 )
+
+document.body.append(widget)
 ```
 
-**Content format:**
-All content compiles to `[{ props }, ...children]`.
-- `h1('text')` → `[{}, 'text']`
-- `h1({ class: 'title' })` → `[{ class: 'title' }]`
-- `h1({ class: 'title' }, 'text')` → `[{ class: 'title' }, 'text']`
+## Lists
 
-**Reactive content:**
-Elements update automatically when reactive dependencies change.
+**Rule: Always replace, never mutate**
+
 ```javascript
-span(() => Counter())  // Updates automatically
-div({ 
-  class: () => Counter() % 2 ? 'odd' : 'even' 
-}, () => `Count: ${Counter()}`)
-```
+const Items = View([])
 
-### List Handling
-
-**Always replace, never mutate:**
-```javascript
 // ✅ Correct
 Items([...Items(), newItem])
-Items(Items().filter(item => item.id !== targetId))
+Items(Items().filter(item => item.id !== id))
 
 // ❌ Wrong
 Items().push(newItem)
 Items()[0] = newValue
 ```
 
-**Rendering lists:**
-Map arrays to DOM elements with empty state handling.
+**Rendering:**
+
 ```javascript
 const { TodoList, TodoItem, div } = View
 
 TodoList(() => 
   Todos().length === 0 
-    ? div({ class: 'empty' }, 'No todos yet!')
-    : Todos().map(todo => 
-        TodoItem({ 
-          Text: todo.text,
-          Delete: { onclick: () => removeTodo(todo.id) }
-        })
-      )
+    ? div({ class: 'empty' }, 'No todos yet')
+    : Todos().map(todo => TodoItem({ Text: todo.text }))
 )
 ```
 
-### External Templates
+## External Templates
 
-Load and use templates from external HTML files or dynamic sources.
+Load HTML templates from external files:
 
-**Parse HTML documents:**
 ```javascript
-// Using simplified API
-const { DomParser, Fetch } = View
+const { Fetch, DomParser } = View
 
-// Static HTML
-const Templates = DomParser('<html><template View="Card">...</template></html>')
-const { Card } = Templates
-Card({ Title: 'Hello' })
-
-// From fetch view
+// Load templates
 const Html = Fetch({ url: '/templates.html' })
 const Templates = DomParser(Html)
+
+// Use them
 const { UserCard, TodoItem } = Templates
-
-// Reactive parsing
-const Templates = DomParser(() => dynamicHTML())
-```
-
-**Multiple template sources:**
-```javascript
-const { DomParser, Fetch } = View
-const Components = DomParser(Fetch({ url: '/components.html' }))
-const Layouts = DomParser(Fetch({ url: '/layouts.html' }))
-
-const { Button, Card } = Components
-const { Header, Footer } = Layouts
+App(UserCard({ Name: 'John' }))
 ```
 
 **With loading states:**
-```javascript
-const { DomParser, Fetch, div } = View
-const Html = Fetch({ url: '/templates.html' })
-const Templates = DomParser(Html)
-const IsReady = View(() => !!Templates())
 
-const { App } = View
+```javascript
+const Ready = View(() => !!Templates())
+
 App(() => 
-  IsReady() 
-    ? Templates.UserCard({ Name: 'John' })
-    : div('Loading templates...')
+  Ready() 
+    ? UserCard({ Name: 'John' })
+    : div('Loading...')
 )
 ```
 
-**Dynamic template switching:**
+**Multiple sources:**
+
 ```javascript
-const { DomParser, Fetch } = View
-const Theme = View('light')
-const ThemeHTML = View(() => 
-  Theme() === 'dark' 
-    ? Fetch({ url: '/themes/dark.html' })() 
-    : Fetch({ url: '/themes/light.html' })()
-)
-const Templates = DomParser(ThemeHTML)
+const UI = DomParser(Fetch({ url: '/ui.html' }))
+const Forms = DomParser(Fetch({ url: '/forms.html' }))
 
-// Templates automatically update when theme changes
-const { Button } = Templates
+const { Button } = UI
+const { Input } = Forms
 ```
 
-**Document parsing handles:**
-- Malformed HTML (returns document with error nodes)
-- Empty strings (returns empty document)
-- Null/undefined (returns undefined)
-- Reactive updates when source changes
+## Remote Views
 
-### Remote Views
+Remote views use a **2-step process**:
 
-Remote views use a **2-step process**: first create a fetch configurator, then create the actual remote view.
+### Step 1: Get/Create Configurator
 
-**Step 1: Get or create a fetch configurator**
 ```javascript
 // From View (empty config)
 const { Fetch } = View
 
-// Or create a custom fetch configurator with base configuration
-const ApiFetch = View(fetch, { url: 'https://api.example.com' })
+// Or create custom configurator with base config
+const ApiFetch = View(fetch, { 
+  url: 'https://api.example.com',
+  headers: { Authorization: 'Bearer token' }
+})
 ```
 
-**Step 2: Create remote views**
-```javascript
-// Static configuration
-const Users = Fetch({ url: '/api/users' })
-const Users = ApiFetch({ path: '/users' })  // Extends base config
+### Step 2: Create Remote View
 
-// Reactive URL (refetches when condition changes)
+```javascript
+// Static
+const Users = Fetch({ url: '/api/users' })
+const Users = ApiFetch({ path: '/users' })
+
+// Reactive (refetches when PostId changes)
 const PostId = View(1)
 const Post = Fetch(() => ({ url: `/api/posts/${PostId()}` }))
 
-// With explicit conditions
-const DocId = View(456)
+// Conditional (only refetches when DocId changes)
+const DocId = View(1)
 const Doc = Fetch([DocId], payload => ({
   url: `/api/documents/${DocId()}`,
   body: payload
 }))
-
-// Usage
-Users()         // GET - returns cached value
-Users(newUser)  // POST - updates cache
-PostId(2)       // Triggers Post refetch
-Doc()           // GET - refetches when DocId changes
-Doc(updates)    // POST with updates
 ```
 
-**With callbacks:**
+### Usage
+
+```javascript
+// GET (read cache)
+const data = Users()
+
+// POST (send data)
+Users(newUser)
+
+// Trigger refetch
+PostId(2)  // Post refetches automatically
+DocId(5)   // Doc refetches automatically
+```
+
+### With Callbacks
+
 ```javascript
 const Users = Fetch({
   url: '/api/users',
-  loading: url => IsLoading(!!url),      // Called before/after request
-  failed: ({ response, error }) => {      // Error handling
+  loading: url => IsLoading(!!url),
+  failed: ({ response, error }) => {
     if (response) console.log('HTTP error:', response.status)
     else console.log('Network error:', error)
   },
-  result: data => console.log('Success:', data)  // Success callback
+  result: data => console.log('Success:', data)
 })
 ```
+
+### Configuration
 
 **Query parameters:**
 ```javascript
 const Page = View(1)
-const Filter = View('')
-
-const Users = Fetch([Page, Filter], payload => ({
+const Users = Fetch([Page], payload => ({
   url: '/api/users',
-  query: { page: Page(), filter: Filter() },  // ?page=1&filter=
+  query: { page: Page(), limit: 20 },
   body: payload
 }))
 ```
 
-**Configuration merging:**
+**Merging configs:**
 ```javascript
-const Token = View('abc123')
-
 const ApiFetch = View(fetch, {
   url: 'https://api.example.com',
-  headers: { Authorization: `Bearer ${Token()}` }
+  headers: { Authorization: 'Bearer token' }
 })
 
-const Users = ApiFetch({ path: '/users' })  // Inherits url and headers
+// Inherits url and headers
+const Users = ApiFetch({ path: '/users' })
 ```
 
-### Local View from/to Remote View
+## Common Patterns
 
-**Remote to Local**
-Auto-refetch and display remote data reactively.
+### Edit Remote Data
+
 ```javascript
 const { Fetch } = View
 const DocId = View(1)
 
-// Refetches when DocId changes
+// Remote state (refetches when DocId changes)
 const ServerDoc = Fetch([DocId], payload => ({
-  url: `/api/posts/${DocId()}`,
+  url: `/api/docs/${DocId()}`,
   body: payload
-}))
-
-// Usage in templates - displays cached value
-const { PostView } = View
-PostView({
-  Title: () => ServerDoc()?.title || 'Loading...',
-  Content: () => ServerDoc()?.content || ''
-})
-
-// Change document - automatically refetches
-DocId(2)
-```
-
-**Editable Remote Doc**
-Separate remote and local state for editing workflows.
-```javascript
-const { Fetch } = View
-const DocId = View(456)
-const UserId = View(123)
-
-// Remote view - refetches when DocId changes
-const ServerDoc = Fetch([DocId], payload => ({
-  url: `/api/documents/${DocId()}`,
-  body: payload && { ...payload, userId: UserId() },
-  loading: url => IsLoading(!!url)
 }))
 
 // Local editing state
 const LocalDoc = View({})
 
-// Initialize local from remote when document loads
+// Initialize local from remote
 View(() => {
   if (ServerDoc() && !LocalDoc().id) {
     LocalDoc({ ...ServerDoc() })
   }
 })
 
-// Save local changes to remote
-const save = () => {
-  ServerDoc(LocalDoc())  // POST with LocalDoc as payload
-  ShowSaved(true)
-}
+// Save changes
+const save = () => ServerDoc(LocalDoc())
 
 // Edit UI binds to LocalDoc
 const { Editor } = View
@@ -748,182 +482,315 @@ Editor({
 })
 ```
 
-### Customizing the Library
+### Tab Interface
 
-The library exports with a default attribute name of `View`. You can import it with any name you prefer:
-
-```javascript
-import View from 'view.js'   // Standard - use View
-import V from 'view.js'       // Short form - use V
-import ui from 'view.js'      // Alternative - use ui
-```
-
-For custom attribute names or configuration:
-```javascript
-import ViewJS from 'view.js'
-const view = ViewJS({ 
-  attribute: 'ref',  // Use ref="Name" in HTML instead of View="Name"
-  window: customWindow,  // Custom window object
-  debounce: 10  // Debounce time in ms
-})
-```
-
-### Best Practices
-
-1. **Uppercase naming**: Use `PascalCase` for views: `const Counter = View(0)`
-2. **Destructure element/template views**: Use `const { App, Counter } = View`
-3. **Call views to read/write**: `Counter()` to read, `Counter(5)` to write
-4. **Template-first**: Write HTML templates with CSS, bind with minimal JavaScript
-5. **Prefer templates**: HTML templates are more maintainable than programmatic DOM creation
-6. **Always replace state**: Use spread/filter/map - never mutate arrays/objects
-7. **Uppercase View attributes in HTML**: `View="UserCard"` required (not `View="userCard"`)
-8. **Uppercase view references in JS**: `Title: 'text'` for descendant views, `class: 'active'` for attributes
-9. **Lowercase tags**: `div`, `span` (factories, not unique elements)
-9. **Explicit dependencies**: Use `View([deps], fn)` to control when computations rerun
-10. **localStorage prefixes**: Use prefix argument to organize keys: `View(localStorage, 'prefix/')`
-11. **2-step fetch pattern**: Always configure fetch in step 1, create remote view in step 2
-12. **Destructure from View**: Use `const { div, span } = View` instead of `View.div`, `View.span`
-
-### VanJS Enhancements
-
-ViewJS is built on VanJS 1.5.3 and includes several enhancements that make reactive development more powerful:
-
-**Fragment Support**
-Reactive functions can return arrays of elements, enabling dynamic component composition:
+Use conditional updates to prevent unnecessary re-renders:
 
 ```javascript
-const { div, Container } = View
-const renderItems = () => Items().map(item => 
-  div({ class: 'item' }, item.name)
-)
+const ActiveTab = View('users')
 
-Container(renderItems)  // Automatically handles array of elements
-```
-
-Fragment support also works with conditional rendering:
-```javascript
-const { div, App } = View
-const conditionalContent = () => [
-  IsLoading() && div('Loading...'),
-  HasError() && div({ class: 'error' }, Error()),
-  Data() && div('Content loaded')
-].filter(Boolean)
-
-App(conditionalContent)
-```
-
-Templates with multiple root elements are automatically wrapped in document fragments. When a parent container only contains fragment children, the fragments unfold directly into the parent, preserving flexbox and grid layouts that require direct parent-child relationships.
-
-**Explicit Updates**
-Control when expensive computations run by explicitly declaring conditions, perfect for tab interfaces and performance optimization:
-
-```javascript
-const { UserList, SettingsPanel, div, App } = View
-
-// Tab switching: only update when ActiveTab changes, not when content changes
 const TabContent = View([ActiveTab], () => 
-  ActiveTab() === 'users' ? 
-    UserList({ users: AllUsers() }) :  // Won't re-render when AllUsers changes
-  ActiveTab() === 'settings' ?
-    SettingsPanel({ config: AppConfig() }) :  // Won't re-render when AppConfig changes
-    div('Select a tab')
+  ActiveTab() === 'users' ? UserList({ users: AllUsers() }) :
+  ActiveTab() === 'settings' ? SettingsPanel({ config: AppConfig() }) :
+  div('Select a tab')
 )
 
-App(TabContent)
+// Only re-renders when ActiveTab changes
+// Won't re-render when AllUsers or AppConfig change
 ```
 
-Without explicit conditions, this would re-render whenever `AllUsers` or `AppConfig` changes, even when those tabs aren't visible. With explicit conditions, it only re-renders when `ActiveTab` changes.
+### Form Handling
 
-You can also force updates for stateless calls:
 ```javascript
-// Force update on user action, regardless of other dependencies
-const RefreshData = View([ForceUpdate], () => {
-  // This runs when ForceUpdate changes, ignoring other state changes
-  return fetchAndRenderExpensiveData()
-})
+const form = {
+  email: View(''),
+  password: View(''),
+  isValid: View(() => form.email().includes('@') && form.password().length >= 8)
+}
 
-// Trigger refresh manually
-const handleRefresh = () => ForceUpdate(Date.now())
+const { Form } = View
+Form({
+  EmailInput: { 
+    value: () => form.email(), 
+    oninput: e => form.email(e.target.value) 
+  },
+  PasswordInput: { 
+    value: () => form.password(), 
+    oninput: e => form.password(e.target.value) 
+  },
+  SubmitBtn: { 
+    disabled: () => !form.isValid(),
+    onclick: () => submitForm(form)
+  }
+})
 ```
 
-This prevents unnecessary re-renders and ensures proper cleanup of event listeners and DOM references in complex component hierarchies.
+## Best Practices
 
-**Shorter Conditional Syntax**
-ViewJS enables shorter conditional rendering by supporting the `&&` operator. It automatically filters out `false`, `null`, or `undefined` values but preserves the number zero. To handle zero values, use explicit comparisons like `value !== 0`:
+1. **Uppercase naming**: `View="Counter"` not `View="counter"` in HTML
+2. **PascalCase in JS**: `const Counter = View(0)` not `const counter = View(0)`
+3. **Always replace state**: Use spread/filter/map, never mutate
+4. **Destructure views**: `const { App, Counter } = View`
+5. **Templates first**: HTML for structure, JS for behavior
+6. **Lowercase = props, Uppercase = descendants**: `{ class: 'active', Title: 'Hello' }`
+7. **Conditional updates**: Use `View([triggers], fn)` for precise control
+8. **localStorage prefixes**: `View(localStorage, 'prefix/')` to organize data
+9. **2-step fetch**: Configure → Create remote view
+
+## VanJS Enhancements
+
+ViewJS is built on VanJS 1.5.3 with these enhancements:
+
+### Fragment Support
+
+Return arrays from reactive functions:
+
+```javascript
+const { div } = View
+const Items = View(['A', 'B', 'C'])
+
+// Returns array of elements
+div(() => Items().map(item => div(item)))
+```
+
+Multi-root templates automatically become fragments.
+
+### Conditional Rendering
+
+Use `&&` operator for concise conditionals:
 
 ```javascript
 const { div, span } = View
 
-// Concise conditional syntax - no ternary needed
-const message = () => User() && `Welcome, ${User().name}!`
-const errorDisplay = () => HasError() && div({ class: 'error' }, 'Something went wrong')
-const count = () => Items().length > 0 && span(`${Items().length} items`)
+// These work
+() => User() && `Welcome, ${User().name}!`
+() => HasError() && div({ class: 'error' }, 'Error!')
+() => Count() > 0 && span(`${Count()} items`)
 
-// Instead of verbose ternaries
-const message = () => User() ? `Welcome, ${User().name}!` : null
-const errorDisplay = () => HasError() ? div({ class: 'error' }, 'Something went wrong') : null
-const count = () => Items().length > 0 ? span(`${Items().length} items`) : null
+// Filters out: false, null, undefined
+// Preserves: 0, '', and all other values
 ```
 
-Smart value handling preserves meaningful content while filtering out display issues:
+### Event Binding
+
+Bind to any DOM node:
 
 ```javascript
-// These become empty strings
-div(null)           // Empty div
-span(undefined)     // Empty span  
-p(false && 'text')  // Empty paragraph
+const { Window, Document } = View
 
-// These preserve the actual value (numbers and strings are kept)
-h1(0)              // Shows "0"
-span('')           // Shows empty string
-div(-1)            // Shows "-1"
+Window({ onresize: updateLayout })
+Document({ onkeydown: e => e.key === 'Escape' && closeModal() })
+
+// Or any element
+View(document.body, { onclick: handleClick })
 ```
 
-This makes conditional rendering more concise while preventing `null`, `undefined`, or `false` from appearing as unwanted text in your UI.
+## Advanced Topics
 
-**HTML-First Development**
-Write component structure in HTML templates, then bind behavior with minimal JavaScript:
+### Sub-views
+
+Access nested views via properties:
+
+```javascript
+// Template sub-views
+const { Card } = View
+Card.Title('Hello')      // Update Title inside Card
+
+// Storage sub-views
+LocalStorage.Settings({ theme: 'dark' })
+LocalStorage.User({ name: 'John' })
+```
+
+### Customization
+
+Import with any name:
+
+```javascript
+import View from 'view.js'   // Standard
+import V from 'view.js'       // Short
+import ui from 'view.js'      // Alternative
+```
+
+Custom attribute name:
+
+```javascript
+import ViewJS from 'view.js'
+const view = ViewJS({ attribute: 'ref' })  // Use ref="Name" instead of View="Name"
+```
+
+### Performance
+
+Control when computations run:
+
+```javascript
+// Auto-tracked (runs on any dependency change)
+const Auto = View(() => compute(A(), B(), C()))
+
+// Controlled (only runs when A or B change, ignores C)
+const Controlled = View([A, B], () => compute(A(), B(), C()))
+```
+
+## API Reference
+
+### View()
+
+```javascript
+View(value)              // Create state
+View(() => expr)         // Create computed
+View([triggers], fn)     // Create conditional computed
+View(localStorage)       // Create storage proxy
+View(DOMParser, html)    // Parse HTML
+View(fetch, config)      // Create fetch configurator
+View(node, props)        // Bind to DOM node
+```
+
+### Simplified API
+
+```javascript
+const { 
+  Window,      // window object
+  Document,    // document object
+  LocalStorage,// localStorage proxy
+  Fetch,       // fetch configurator
+  DomParser    // HTML parser
+} = View
+```
+
+### Template Binding
+
+```javascript
+Template({
+  Child: 'content',                    // Set content
+  Child: { prop: value },              // Set properties
+  Child: [{ prop: value }, 'content']  // Set both
+})
+```
+
+### Remote View Config
+
+```javascript
+{
+  url: '/api/users',           // Base URL
+  path: '/append',             // Path to append
+  query: { key: 'value' },     // Query parameters
+  body: data,                  // Request body (auto-POST)
+  method: 'GET',               // HTTP method
+  headers: { 'X-Custom': 'value' },
+  loading: url => ...,         // Loading callback
+  failed: ({ response, error }) => ...,
+  result: data => ...          // Success callback
+}
+```
+
+## Examples
+
+### Counter
 
 ```html
-<!-- Define structure in HTML -->
-<template View="TodoApp">
-  <div class="todo-container">
-    <input View="NewTodo" placeholder="Add todo..." />
-    <button View="AddBtn" class="btn-primary">Add</button>
-    <div View="TodoList" class="todo-list"></div>
-    <div View="Summary" class="summary"></div>
-  </div>
+<template View="Counter">
+  <button View="Dec">-</button>
+  <span View="Count">0</span>
+  <button View="Inc">+</button>
 </template>
 
 <script type="module">
-  import View from 'view.js'
-  
-  const Todos = View([])
-  const NewTodo = View('')
-  
-  // Bind behavior to HTML structure
-  const { App, TodoApp, div } = View
-  App(
-    TodoApp({
-      NewTodo: { 
-        oninput: e => NewTodo(e.target.value),
-        value: () => NewTodo()
-      },
-      AddBtn: { 
-        onclick: () => {
-          if (NewTodo().trim()) {
-            Todos([...Todos(), { id: Date.now(), text: NewTodo() }])
-            NewTodo('')
-          }
-        }
-      },
-      TodoList: () => Todos().map(todo => 
-        div({ class: 'todo-item' }, todo.text)
-      ),
-      Summary: () => `${Todos().length} todos`
-    })
-  )
+import View from 'view.js'
+
+const Count = View(0)
+const { App, Counter } = View
+
+App(Counter({
+  Count: () => Count(),
+  Inc: { onclick: () => Count(Count() + 1) },
+  Dec: { onclick: () => Count(Count() - 1) }
+}))
 </script>
 ```
 
-This approach separates concerns cleanly: HTML handles structure and styling, JavaScript handles behavior and state management.
+### Todo List
+
+```html
+<template View="TodoApp">
+  <input View="Input" placeholder="Add todo..." />
+  <button View="AddBtn">Add</button>
+  <div View="List"></div>
+</template>
+
+<script type="module">
+import View from 'view.js'
+
+const Todos = View([])
+const Input = View('')
+
+const { App, TodoApp, div } = View
+
+App(TodoApp({
+  Input: { 
+    value: () => Input(),
+    oninput: e => Input(e.target.value)
+  },
+  AddBtn: { 
+    onclick: () => {
+      if (Input().trim()) {
+        Todos([...Todos(), { id: Date.now(), text: Input() }])
+        Input('')
+      }
+    }
+  },
+  List: () => Todos().map(todo => 
+    div({ class: 'todo' }, todo.text)
+  )
+}))
+</script>
+```
+
+### API Data
+
+```javascript
+import View from 'view.js'
+
+const { Fetch } = View
+const PostId = View(1)
+
+// Refetches when PostId changes
+const Post = Fetch([PostId], () => ({
+  url: `https://jsonplaceholder.typicode.com/posts/${PostId()}`
+}))
+
+const { App, div, h1, p, button } = View
+
+App(div(
+  () => Post() ? div(
+    h1(() => Post().title),
+    p(() => Post().body)
+  ) : div('Loading...'),
+  button({ onclick: () => PostId(PostId() + 1) }, 'Next Post')
+))
+```
+
+## Troubleshooting
+
+**View not updating?**
+- Use functions for reactive content: `() => Count()` not `Count()`
+- Check View attribute is uppercase: `View="Counter"` not `View="counter"`
+
+**Template not found?**
+- Element must exist before accessing: `const { App } = View`
+- Template must be `<template View="Name">`
+
+**State not persisting?**
+- localStorage views auto-save, but check browser storage limits
+- Use prefix to avoid key conflicts: `View(localStorage, 'myapp/')`
+
+**Remote view not refetching?**
+- For reactive: use function `() => ({ url: ... })`
+- For conditional: use array `[trigger], payload => ({ url: ... })`
+
+## Learn More
+
+- **GitHub**: [github.com/tamasmajer/view-js](https://github.com/tamasmajer/view-js)
+- **Built on**: [VanJS 1.5.3](https://vanjs.org/)
+- **Size**: <3.3KB minified + gzipped
+- **License**: MIT
+
+This is a proof of concept exploring simpler alternatives to modern frameworks. Feedback welcome!
