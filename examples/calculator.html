@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ViewJS Calculator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+
+  <div View="App"></div>
+
+  <template View="Calculator">
+    <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm">
+      <div class="mb-4">
+        <div View="Display"
+          class="bg-gray-900 text-white text-right text-3xl p-4 rounded font-mono h-16 overflow-hidden">0</div>
+      </div>
+
+      <div class="grid grid-cols-4 gap-2">
+        <button View="BtnClear"
+          class="bg-red-500 hover:bg-red-600 text-white font-bold py-4 px-4 rounded col-span-2">C</button>
+        <button View="BtnDelete"
+          class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-4 rounded">DEL</button>
+        <button View="BtnDivide" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-4 rounded">÷</button>
+
+        <button View="Btn7" class="bg-gray-200 hover:bg-gray-300 font-bold py-4 px-4 rounded">7</button>
+        <button View="Btn8" class="bg-gray-200 hover:bg-gray-300 font-bold py-4 px-4 rounded">8</button>
+        <button View="Btn9" class="bg-gray-200 hover:bg-gray-300 font-bold py-4 px-4 rounded">9</button>
+        <button View="BtnMultiply"
+          class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-4 rounded">×</button>
+
+        <button View="Btn4" class="bg-gray-200 hover:bg-gray-300 font-bold py-4 px-4 rounded">4</button>
+        <button View="Btn5" class="bg-gray-200 hover:bg-gray-300 font-bold py-4 px-4 rounded">5</button>
+        <button View="Btn6" class="bg-gray-200 hover:bg-gray-300 font-bold py-4 px-4 rounded">6</button>
+        <button View="BtnSubtract"
+          class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-4 rounded">−</button>
+
+        <button View="Btn1" class="bg-gray-200 hover:bg-gray-300 font-bold py-4 px-4 rounded">1</button>
+        <button View="Btn2" class="bg-gray-200 hover:bg-gray-300 font-bold py-4 px-4 rounded">2</button>
+        <button View="Btn3" class="bg-gray-200 hover:bg-gray-300 font-bold py-4 px-4 rounded">3</button>
+        <button View="BtnAdd" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-4 rounded">+</button>
+
+        <button View="Btn0" class="bg-gray-200 hover:bg-gray-300 font-bold py-4 px-4 rounded col-span-2">0</button>
+        <button View="BtnDecimal" class="bg-gray-200 hover:bg-gray-300 font-bold py-4 px-4 rounded">.</button>
+        <button View="BtnEquals"
+          class="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-4 rounded">=</button>
+      </div>
+    </div>
+  </template>
+
+  <script type="module">
+    import View from '../view.js'
+    // import View from 'https://cdn.jsdelivr.net/gh/tamasmajer/view-js/view.min.js'
+
+    // State
+    const CurrentValue = View('0')
+    const PreviousValue = View('')
+    const Operation = View('')
+    const WaitingForOperand = View(false)
+
+    // Calculator logic
+    const inputDigit = (digit) => {
+      if (WaitingForOperand()) {
+        CurrentValue(String(digit))
+        WaitingForOperand(false)
+      } else {
+        CurrentValue(CurrentValue() === '0' ? String(digit) : CurrentValue() + digit)
+      }
+    }
+
+    const inputDecimal = () => {
+      if (WaitingForOperand()) {
+        CurrentValue('0.')
+        WaitingForOperand(false)
+      } else if (CurrentValue().indexOf('.') === -1) {
+        CurrentValue(CurrentValue() + '.')
+      }
+    }
+
+    const clear = () => {
+      CurrentValue('0')
+      PreviousValue('')
+      Operation('')
+      WaitingForOperand(false)
+    }
+
+    const deleteDigit = () => {
+      const value = CurrentValue()
+      CurrentValue(value.length > 1 ? value.slice(0, -1) : '0')
+    }
+
+    const performOperation = (nextOperation) => {
+      const inputValue = parseFloat(CurrentValue())
+
+      if (PreviousValue() === '') {
+        PreviousValue(inputValue)
+      } else if (Operation()) {
+        const currentValue = PreviousValue()
+        const newValue = calculate(currentValue, inputValue, Operation())
+
+        CurrentValue(String(newValue))
+        PreviousValue(newValue)
+      }
+
+      WaitingForOperand(true)
+      Operation(nextOperation)
+    }
+
+    const calculate = (firstValue, secondValue, operation) => {
+      switch (operation) {
+        case '+': return firstValue + secondValue
+        case '−': return firstValue - secondValue
+        case '×': return firstValue * secondValue
+        case '÷': return firstValue / secondValue
+        default: return secondValue
+      }
+    }
+
+    const equals = () => {
+      const inputValue = parseFloat(CurrentValue())
+
+      if (Operation() && PreviousValue() !== '') {
+        const result = calculate(PreviousValue(), inputValue, Operation())
+        CurrentValue(String(result))
+        PreviousValue('')
+        Operation('')
+        WaitingForOperand(true)
+      }
+    }
+
+    // Mount app
+    const { App, Calculator } = View
+
+    App(Calculator({
+      Display: () => CurrentValue(),
+      BtnClear: { onclick: clear },
+      BtnDelete: { onclick: deleteDigit },
+      BtnDivide: { onclick: () => performOperation('÷') },
+      BtnMultiply: { onclick: () => performOperation('×') },
+      BtnSubtract: { onclick: () => performOperation('−') },
+      BtnAdd: { onclick: () => performOperation('+') },
+      BtnEquals: { onclick: equals },
+      Btn0: { onclick: () => inputDigit(0) },
+      Btn1: { onclick: () => inputDigit(1) },
+      Btn2: { onclick: () => inputDigit(2) },
+      Btn3: { onclick: () => inputDigit(3) },
+      Btn4: { onclick: () => inputDigit(4) },
+      Btn5: { onclick: () => inputDigit(5) },
+      Btn6: { onclick: () => inputDigit(6) },
+      Btn7: { onclick: () => inputDigit(7) },
+      Btn8: { onclick: () => inputDigit(8) },
+      Btn9: { onclick: () => inputDigit(9) },
+      BtnDecimal: { onclick: inputDecimal }
+    }))
+  </script>
+</body>
+
+</html>
