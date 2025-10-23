@@ -6,7 +6,7 @@
     "module": "view.js",
     "type": "module",
     "scripts": {
-        "minify": "uglifyjs view.js --compress --mangle --mangle-props reserved=['SIGNAL','bind','tags','dom','ui','rawVal','val','oldVal','Content-Type','isConnected','nodeType','View'] --toplevel -o view.min.js",
+        "minify": "uglifyjs view.js --compress --mangle --mangle-props reserved=['SIGNAL','bind','tags','dom','ui','rawVal','val','value','oldVal','Content-Type','isConnected','nodeType','View','_state','_isRemote','_fetch','_baseConfig','_isFetchConfigurator'] --toplevel -o view.min.js",
         "size": "node -e \"const fs=require('fs'),zlib=require('zlib');const min=fs.readFileSync('view.min.js');console.log('Minified:',min.length,'bytes');console.log('Gzipped:',zlib.gzipSync(min).length,'bytes');\"",
         "build": "npm run minify && npm run size"
     },
