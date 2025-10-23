@@ -1,0 +1,33 @@
+{
+    "name": "view-js",
+    "version": "1.0.0",
+    "description": "Think in views. A tiny client-side library for building reactive UIs with minimal, concise, declarative code.",
+    "main": "view.min.js",
+    "module": "view.js",
+    "type": "module",
+    "scripts": {
+        "minify": "uglifyjs view.js --compress --mangle --mangle-props reserved=['SIGNAL','bind','tags','dom','ui','rawVal','val','oldVal','Content-Type','isConnected','nodeType','View'] --toplevel -o view.min.js",
+        "size": "node -e \"const fs=require('fs'),zlib=require('zlib');const min=fs.readFileSync('view.min.js');console.log('Minified:',min.length,'bytes');console.log('Gzipped:',zlib.gzipSync(min).length,'bytes');\"",
+        "build": "npm run minify && npm run size"
+    },
+    "keywords": [
+        "view",
+        "viewjs",
+        "view-js",
+        "ui",
+        "library",
+        "tiny",
+        "reactive",
+        "templates",
+        "vanjs"
+    ],
+    "author": "Tamas Majer",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/tamasmajer/view-js"
+    },
+    "devDependencies": {
+        "uglify-js": "^3.19.3"
+    }
+}

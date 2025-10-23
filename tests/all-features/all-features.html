@@ -1,0 +1,93 @@
+be
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ViewJS - Complete Test Suite</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+        }
+
+        h1 {
+            color: #4ec9b0;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>ViewJS - Complete Test Suite</h1>
+    <p>Open DevTools Console to see test results...</p>
+
+    <script type="module">
+        import View from '../../view.js'
+        import * as helpers from './utils.js'
+
+        // Import all test modules
+        import testSimpleReactiveTemplateDestructuring from './test-simple-reactive-template-destructuring.js'
+        import testReactiveTemplateDestructuring from './test-reactive-template-destructuring.js'
+        import testDomparserDiagnostics from './test-domparser-diagnostics.js'
+        import testSimplifiedApi from './test-simplified-api.js'
+        import testDataViews from './test-data-views.js'
+        import testLocalStorage from './test-localstorage.js'
+        import testRemoteViews from './test-remote-views.js'
+        import testDomViews from './test-dom-views.js'
+        import testTemplates from './test-templates.js'
+        import testSubviews from './test-subviews.js'
+        import testReactiveBindings from './test-reactive-bindings.js'
+        import testEvents from './test-events.js'
+        import testTags from './test-tags.js'
+        import testAdvancedTemplates from './test-advanced-templates.js'
+        import testLists from './test-lists.js'
+        import testFragments from './test-fragments.js'
+        import testEdgeCases from './test-edge-cases.js'
+        import testDocumentParsing from './test-document-parsing.js'
+
+        // Run all tests
+        console.clear()
+        console.log('%c🧪 ViewJS Test Suite', 'font-size: 20px; font-weight: bold; color: #4ec9b0')
+        console.log('═'.repeat(50))
+
+        const startTime = performance.now()
+
+        try {
+            // await testRemoteViews(View, helpers)
+            if (true) {
+                await testSimpleReactiveTemplateDestructuring(View, helpers)
+                await testReactiveTemplateDestructuring(View, helpers)
+                await testDomparserDiagnostics(View, helpers)
+                await testSimplifiedApi(View, helpers)
+                // Original test suite
+                await testDataViews(View, helpers)
+                await testLocalStorage(View, helpers)
+                await testRemoteViews(View, helpers)
+                await testDomViews(View, helpers)
+                await testTemplates(View, helpers)
+                await testSubviews(View, helpers)
+
+                // Comprehensive test suite
+                await testReactiveBindings(View, helpers)
+                await testEvents(View, helpers)
+                await testTags(View, helpers)
+                await testAdvancedTemplates(View, helpers)
+                await testLists(View, helpers)
+                await testFragments(View, helpers)
+                await testEdgeCases(View, helpers)
+                await testDocumentParsing(View, helpers)
+            }
+
+            const duration = (performance.now() - startTime).toFixed(2)
+            console.log('═'.repeat(50))
+            console.log(`%c✅ All tests completed in ${duration}ms`, 'color: #4ec9b0; font-weight: bold')
+        } catch (error) {
+            console.error('❌ Test suite failed:', error)
+        }
+    </script>
+</body>
+
+</html>
